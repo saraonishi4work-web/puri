@@ -76,7 +76,6 @@
            ========================================= */
         #home-screen { align-items: center; justify-content: center; text-align: center; position: relative; overflow: hidden; }
         
-        /* Aligned top right. flex-start prevents empty stretching! */
         .home-controls-container {
             position: absolute; top: 20px; right: 20px;
             display: flex; flex-direction: row; gap: 20px; z-index: 10;
@@ -94,7 +93,6 @@
         .menu-content { padding: 15px; display: flex; flex-direction: column; gap: 10px; text-align: left; }
         .auth-toggle { font-size: 12px; color: var(--primary-color); cursor: pointer; text-decoration: underline; text-align: center; }
 
-        /* Perfect Center alignment */
         .title-area { z-index: 2; }
         .title-area h1 { font-size: 4em; color: var(--primary-color); margin-bottom: 0; text-shadow: 2px 2px 5px rgba(255,255,255,0.8); }
         .title-area p { font-size: 1.2em; font-weight: bold; text-shadow: 1px 1px 3px rgba(255,255,255,0.8); }
@@ -102,7 +100,6 @@
         .home-buttons { display: flex; gap: 20px; margin-top: 30px; z-index: 2; justify-content: center;}
         .home-buttons button { font-size: 20px; padding: 15px 40px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
 
-        /* Floating Hearts Animation */
         .heart-float {
             position: absolute; font-size: 2rem; user-select: none; pointer-events: none;
             animation: floatUp linear forwards; z-index: 1; opacity: 0.8;
@@ -131,11 +128,12 @@
            PRE-EDIT: PHOTO SELECTION SCREEN
            ========================================= */
         #photo-select-screen { align-items: center; justify-content: center; text-align: center; padding: 20px; }
-        .camera-box { background: var(--sidebar-bg); padding: 30px; border-radius: var(--border-radius); box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-width: 90vw; width: 500px; }
+        .camera-box { background: var(--sidebar-bg); padding: 30px; border-radius: var(--border-radius); box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-width: 90vw; width: 600px; }
         
+        /* Removed hardcoded aspect ratio to support both landscape and portrait dynamically */
         #video-feed, #snap-preview {
-            width: 100%; aspect-ratio: 500 / 650; background: #000; border-radius: 10px; 
-            margin: 0 auto 15px auto; object-fit: cover; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            width: 100%; max-height: 60vh; background: #000; border-radius: 10px; 
+            margin: 0 auto 15px auto; object-fit: contain; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
         
         .photo-options { display: flex; gap: 15px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
@@ -191,7 +189,7 @@
            GALLERY SCREEN
            ========================================= */
         #gallery-screen { padding: 40px; }
-        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; align-items: start;}
         .gallery-item { background: var(--sidebar-bg); padding: 15px; border-radius: var(--border-radius); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .gallery-item img { width: 100%; border-radius: 10px; }
         .reaction-bar { display: flex; gap: 10px; margin-top: 10px; justify-content: center; }
@@ -211,7 +209,7 @@
             #editor-screen { flex-direction: column; height: 100vh; overflow-y: auto; }
             .sidebar { width: 100%; height: auto; flex: none; border-right: none; order: 2; border-top: 3px solid #ddd; }
             .workspace { padding: 20px 0; min-height: 55vh; order: 1; justify-content: flex-start; }
-            .canvas-wrapper { transform: scale(0.65); transform-origin: top center; margin-bottom: -200px; }
+            .canvas-wrapper { transform: scale(0.60); transform-origin: top center; margin-bottom: -200px; }
         }
     </style>
 </head>
@@ -221,7 +219,6 @@
     <div id="home-screen" class="screen">
         
         <div class="home-controls-container">
-            <!-- Foldable Theme Selector (Added name="home-menus" for accordion behavior) -->
             <details class="foldable-menu" name="home-menus">
                 <summary>🎨 Theme Customization</summary>
                 <div class="menu-content">
@@ -237,7 +234,6 @@
                 </div>
             </details>
 
-            <!-- Foldable Account Sign in / Sign up (Added name="home-menus" for accordion behavior) -->
             <details class="foldable-menu" id="auth-menu" name="home-menus">
                 <summary>👤 Account</summary>
                 <div class="menu-content" id="auth-box">
@@ -268,7 +264,7 @@
         </div>
 
         <div class="title-area">
-            <h1>✨PURIKURA✨</h1>
+            <h1>PURIKURA</h1>
             <p>Free Japanese Photo Booth Experience for Everyone, Anywhere, Anytime</p>
         </div>
         <div class="home-buttons">
@@ -287,13 +283,11 @@
             <video id="video-feed" autoplay playsinline></video>
             <img id="snap-preview" alt="Snapshot Preview" />
             
-            <!-- Default Controls -->
             <div class="photo-options" id="camera-controls">
                 <button onclick="startCamera()" id="btn-start-cam">📷 Open Camera</button>
                 <button onclick="captureCamera()" id="btn-snap" class="hidden">📸 Snap!</button>
             </div>
 
-            <!-- Confirmation Controls -->
             <div class="photo-options hidden" id="confirm-controls">
                 <button onclick="retakePhoto()" style="background: #888;">❌ Retake</button>
                 <button onclick="confirmPhoto()">✅ Keep & Edit</button>
@@ -474,7 +468,8 @@
         <!-- Workspace -->
         <div class="workspace">
             <div class="canvas-wrapper" id="canvas-wrapper">
-                <canvas id="purikura-canvas" width="500" height="650"></canvas>
+                <!-- Size will be set dynamically via JS -->
+                <canvas id="purikura-canvas"></canvas>
             </div>
             <div class="active-tool-indicator">
                 Active Tool: <span id="active-tool-text">STICKERS</span> (Click & Drag elements to glide)
@@ -672,7 +667,7 @@
         }
 
         /* =========================================
-           PRE-EDIT: PHOTO CAPTURE
+           PRE-EDIT: PHOTO CAPTURE (LANDSCAPE / PORTRAIT FIX)
            ========================================= */
         async function startCamera() {
             const video = document.getElementById('video-feed');
@@ -690,14 +685,24 @@
 
         function captureCamera() {
             const video = document.getElementById('video-feed');
-            const targetW = 500; const targetH = 650;
+            
+            // Determine dimensions based on camera orientation
+            const videoRatio = video.videoWidth / video.videoHeight;
+            let targetW, targetH;
+            
+            if (videoRatio > 1) {
+                targetW = 650; targetH = 500; // Landscape
+            } else {
+                targetW = 500; targetH = 650; // Portrait
+            }
+
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = targetW; tempCanvas.height = targetH;
             const ctx = tempCanvas.getContext('2d');
-            const videoRatio = video.videoWidth / video.videoHeight;
             const targetRatio = targetW / targetH;
             let drawW, drawH, startX, startY;
 
+            // Crop correctly ensuring we fill the canvas based on ratio
             if (videoRatio > targetRatio) {
                 drawH = targetH; drawW = targetH * videoRatio;
                 startX = (targetW - drawW) / 2; startY = 0;
@@ -705,6 +710,7 @@
                 drawW = targetW; drawH = targetW / videoRatio;
                 startX = 0; startY = (targetH - drawH) / 2;
             }
+            
             ctx.drawImage(video, startX, startY, drawW, drawH);
             tempPhotoDataUrl = tempCanvas.toDataURL('image/png');
             showPreview();
@@ -765,9 +771,18 @@
             
             fabric.Image.fromURL(imageDataUrl, function(img) {
                 baseImage = img;
-                const scale = Math.max(fabricCanvas.width / img.width, fabricCanvas.height / img.height);
+                
+                // Dynamically set canvas width/height based on whether image is horizontal or vertical
+                const isLandscape = img.width > img.height;
+                const canvasW = isLandscape ? 650 : 500;
+                const canvasH = isLandscape ? 500 : 650;
+                
+                fabricCanvas.setWidth(canvasW);
+                fabricCanvas.setHeight(canvasH);
+
+                const scale = Math.max(canvasW / img.width, canvasH / img.height);
                 img.set({
-                    originX: 'center', originY: 'center', left: fabricCanvas.width / 2, top: fabricCanvas.height / 2,
+                    originX: 'center', originY: 'center', left: canvasW / 2, top: canvasH / 2,
                     scaleX: scale, scaleY: scale, selectable: false, evented: false
                 });
                 fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas));
@@ -911,7 +926,7 @@
         }
 
         /* =========================================
-           FINISH & SAVE (WITH PERMISSIONS)
+           FINISH & SAVE (WEB SHARE API INTEGRATION)
            ========================================= */
         function finishAndSave() {
             fabricCanvas.discardActiveObject();
@@ -965,7 +980,29 @@
             }
         }
 
-        function downloadToDevice(dataUrl) {
+        async function downloadToDevice(dataUrl) {
+            // 1. Mobile specific - Check if the device supports native iOS/Android sharing
+            if (navigator.share) {
+                try {
+                    const response = await fetch(dataUrl);
+                    const blob = await response.blob();
+                    const file = new File([blob], "purikura.png", { type: "image/png" });
+                    
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            files: [file],
+                            title: 'My Purikura',
+                        });
+                        navigate('home');
+                        return;
+                    }
+                } catch (error) {
+                    console.log("Sharing failed or was cancelled:", error);
+                    return; 
+                }
+            }
+
+            // 2. Fallback for Desktop/Browsers that don't support native sharing
             const link = document.createElement('a');
             link.download = 'Purikura_Edit.png';
             link.href = dataUrl;
