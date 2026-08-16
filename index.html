@@ -130,7 +130,6 @@
         #photo-select-screen { align-items: center; justify-content: center; text-align: center; padding: 20px; }
         .camera-box { background: var(--sidebar-bg); padding: 30px; border-radius: var(--border-radius); box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-width: 90vw; width: 600px; }
         
-        /* Removed hardcoded aspect ratio to support both landscape and portrait dynamically */
         #video-feed, #snap-preview {
             width: 100%; max-height: 60vh; background: #000; border-radius: 10px; 
             margin: 0 auto 15px auto; object-fit: contain; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
@@ -184,6 +183,14 @@
         .canvas-wrapper { background: #fff; padding: 0; border: 15px solid var(--primary-color); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative; transition: transform 0.3s; }
         .active-tool-indicator { margin-top: 15px; color: #888; font-size: 14px; }
         .active-tool-indicator span { font-weight: bold; color: var(--primary-color); text-transform: uppercase; }
+
+        /* =========================================
+           RESULT SCREEN
+           ========================================= */
+        #result-screen { align-items: center; justify-content: center; text-align: center; padding: 20px; }
+        .result-box { background: var(--sidebar-bg); padding: 30px; border-radius: var(--border-radius); box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-width: 90vw; width: 600px; display: flex; flex-direction: column; align-items: center;}
+        #final-result-image { max-width: 100%; max-height: 55vh; border-radius: 10px; margin: 15px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .long-press-hint { background: #ffebf0; color: var(--primary-color); padding: 10px 15px; border-radius: 8px; font-weight: bold; margin-bottom: 10px; display: inline-block;}
 
         /* =========================================
            GALLERY SCREEN
@@ -475,7 +482,25 @@
                 Active Tool: <span id="active-tool-text">STICKERS</span> (Click & Drag elements to glide)
             </div>
         </div>
+    </div>
 
+    <!-- RESULT SCREEN -->
+    <div id="result-screen" class="screen hidden">
+        <div class="result-box">
+            <h2 style="color: var(--primary-color); margin-top: 0;">Your Purikura is Ready! ✨</h2>
+            
+            <div class="long-press-hint">
+                📱 Mobile Users: Long-press the image below and select "Save to Photos" to put it in your camera roll!
+            </div>
+            
+            <img id="final-result-image" alt="Your finished Purikura" />
+            
+            <div class="photo-options" style="margin-top: 30px;">
+                <button onclick="triggerFallbackDownload()">⬇️ Download to Device</button>
+                <button onclick="attemptShareToGallery()" style="background: #ffc107; color: #000;">⭐ Share to Gallery</button>
+                <button onclick="navigate('home')" style="background: #888;">🏠 Back Home</button>
+            </div>
+        </div>
     </div>
 
     <!-- GALLERY SCREEN -->
@@ -495,9 +520,9 @@
     <div id="guest-modal" class="hidden">
         <div class="modal-content">
             <h2 style="color: var(--primary-color); margin-top: 0;">Did you know?</h2>
-            <p>Making an account will allow you to share your purikura to the gallery and react to others! Otherwise, you can only see the gallery without sharing or reacting.</p>
+            <p>Making an account will allow you to share your purikura to the gallery! Guests cannot post to the public gallery.</p>
             <div class="modal-buttons">
-                <button onclick="handleGuestModal(false)">OK</button>
+                <button onclick="handleGuestModal(false)">Got it!</button>
                 <button class="btn-secondary" onclick="handleGuestModal(true)">Don't show this again</button>
             </div>
         </div>
@@ -667,7 +692,7 @@
         }
 
         /* =========================================
-           PRE-EDIT: PHOTO CAPTURE (LANDSCAPE / PORTRAIT FIX)
+           PRE-EDIT: PHOTO CAPTURE
            ========================================= */
         async function startCamera() {
             const video = document.getElementById('video-feed');
@@ -686,7 +711,6 @@
         function captureCamera() {
             const video = document.getElementById('video-feed');
             
-            // Determine dimensions based on camera orientation
             const videoRatio = video.videoWidth / video.videoHeight;
             let targetW, targetH;
             
@@ -702,7 +726,6 @@
             const targetRatio = targetW / targetH;
             let drawW, drawH, startX, startY;
 
-            // Crop correctly ensuring we fill the canvas based on ratio
             if (videoRatio > targetRatio) {
                 drawH = targetH; drawW = targetH * videoRatio;
                 startX = (targetW - drawW) / 2; startY = 0;
@@ -772,7 +795,6 @@
             fabric.Image.fromURL(imageDataUrl, function(img) {
                 baseImage = img;
                 
-                // Dynamically set canvas width/height based on whether image is horizontal or vertical
                 const isLandscape = img.width > img.height;
                 const canvasW = isLandscape ? 650 : 500;
                 const canvasH = isLandscape ? 500 : 650;
@@ -926,12 +948,14 @@
         }
 
         /* =========================================
-           FINISH & SAVE (WEB SHARE API INTEGRATION)
+           FINISH & RESULT SCREEN LOGIC
            ========================================= */
         function finishAndSave() {
+            // Deselect items so their bounding boxes don't show up in the final picture
             fabricCanvas.discardActiveObject();
             fabricCanvas.renderAll();
 
+            // Create a temporary canvas to draw the frame on top of the image
             const finalCanvas = document.createElement('canvas');
             const thick = parseInt(document.getElementById('frame-thick-picker').value, 10);
             finalCanvas.width = fabricCanvas.width + (thick * 2);
@@ -948,24 +972,44 @@
                 ctx.drawImage(img, thick, thick);
                 const finalDataUrl = finalCanvas.toDataURL('image/png');
                 
-                if(currentUser) {
-                    const hasPermission = confirm("Do you give permission to post this photo publicly in the gallery?\n\n(Click OK to share, or click Cancel to just download it to your device privately.)");
-                    if(hasPermission) {
-                        shareToGallery(finalDataUrl);
-                    } else {
-                        downloadToDevice(finalDataUrl);
-                    }
-                } else {
-                    const skipWarning = localStorage.getItem('purikura_skip_guest_warning');
-                    if (skipWarning === 'true') {
-                        downloadToDevice(finalDataUrl);
-                    } else {
-                        pendingDownloadUrl = finalDataUrl;
-                        document.getElementById('guest-modal').classList.remove('hidden');
-                    }
-                }
+                // Set the image on the result screen so they can long-press it
+                document.getElementById('final-result-image').src = finalDataUrl;
+                
+                // Keep the URL in a variable in case they click download or share buttons
+                pendingDownloadUrl = finalDataUrl;
+                
+                // Go to result screen
+                navigate('result');
             };
             img.src = dataUrl;
+        }
+
+        // Button action for people on Computers
+        function triggerFallbackDownload() {
+            if(!pendingDownloadUrl) return;
+            const link = document.createElement('a');
+            link.download = 'My_Purikura.png';
+            link.href = pendingDownloadUrl;
+            link.click();
+        }
+
+        // Button action for Gallery Share
+        function attemptShareToGallery() {
+            if(!pendingDownloadUrl) return;
+            
+            if(currentUser) {
+                const hasPermission = confirm("Do you want to post this photo publicly in the gallery?");
+                if(hasPermission) {
+                    shareToGallery(pendingDownloadUrl);
+                }
+            } else {
+                const skipWarning = localStorage.getItem('purikura_skip_guest_warning');
+                if (skipWarning === 'true') {
+                    alert("Please log in or sign up from the Home screen to post to the gallery!");
+                } else {
+                    document.getElementById('guest-modal').classList.remove('hidden');
+                }
+            }
         }
 
         function handleGuestModal(dontShowAgain) {
@@ -973,41 +1017,6 @@
                 localStorage.setItem('purikura_skip_guest_warning', 'true');
             }
             document.getElementById('guest-modal').classList.add('hidden');
-            
-            if (pendingDownloadUrl) {
-                downloadToDevice(pendingDownloadUrl);
-                pendingDownloadUrl = null;
-            }
-        }
-
-        async function downloadToDevice(dataUrl) {
-            // 1. Mobile specific - Check if the device supports native iOS/Android sharing
-            if (navigator.share) {
-                try {
-                    const response = await fetch(dataUrl);
-                    const blob = await response.blob();
-                    const file = new File([blob], "purikura.png", { type: "image/png" });
-                    
-                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        await navigator.share({
-                            files: [file],
-                            title: 'My Purikura',
-                        });
-                        navigate('home');
-                        return;
-                    }
-                } catch (error) {
-                    console.log("Sharing failed or was cancelled:", error);
-                    return; 
-                }
-            }
-
-            // 2. Fallback for Desktop/Browsers that don't support native sharing
-            const link = document.createElement('a');
-            link.download = 'Purikura_Edit.png';
-            link.href = dataUrl;
-            link.click();
-            navigate('home');
         }
 
         function shareToGallery(dataUrl) {
@@ -1016,7 +1025,7 @@
                 reactions: { heart: 0, star: 0, smile: 0 }, reactedBy: []
             });
             
-            alert("Permission granted! Shared to ⭐︎Kira⭐︎Kira⭐︎Gallery successfully!");
+            alert("Shared to ⭐︎Kira⭐︎Kira⭐︎Gallery successfully!");
             navigate('gallery');
             renderGallery();
         }
